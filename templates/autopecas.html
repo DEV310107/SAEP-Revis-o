@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<!-- 
+    SISTEMA DE AUTOPEÇAS - PÁGINA DE CADASTRO E GERENCIAMENTO
+    
+    Este arquivo HTML contém a interface para cadastro e gerenciamento de autopeças.
+    Utiliza Flask como backend (framework web Python) com Jinja2 para templates.
+    
+    FUNCIONALIDADES PRINCIPAIS:
+    1. Cadastro de novas autopeças
+    2. Busca e filtro de peças
+    3. Listagem com status de estoque
+    4. Operações CRUD (Criar, Ler, Atualizar, Deletar)
+    
+    DEPENDÊNCIAS:
+    - Flask (backend Python)
+    - Banco de dados MySQL com tabela de autopeças
+    - Jinja2 (sistema de templates integrado ao Flask)
+-->
+<html lang="pt-BR">
+<head>
+    <!-- Meta tags essenciais para o funcionamento correto da página -->
+    <meta charset="UTF-8"> <!-- Define codificação de caracteres para suporte a acentos -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responsividade em dispositivos móveis -->
+    <title>Cadastro de Autopeças - Sistema de Autopeças</title>
+    
+    <!-- 
+        ESTILOS CSS INTEGRADOS
+        
+        Por que usar CSS interno ao invés de arquivo separado?
+        - Simplifica o projeto (menos arquivos)
+        - Carregamento mais rápido (uma requisição HTTP a menos)
+        - Facilita manutenção para projetos pequenos/médios
+    -->
+    <style>
+        /* 
+            RESET CSS GLOBAL
+            
+            O seletor * aplica estilos a TODOS os elementos da página.
+            Necessário para garantir consistência visual entre diferentes navegadores.
+        */
+        * {
+            margin: 0;          /* Remove margens padrão do navegador */
+            padding: 0;         /* Remove espaçamentos internos padrão */
+            box-sizing: border-box; /* Inclui padding e border no cálculo da largura total */
+        }
+
+        /* 
+            ESTILIZAÇÃO DO CORPO DA PÁGINA
+            
+            Define a aparência base de toda a página.
+        */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Fontes modernas e legíveis */
+            background-color: #f5f7fa;  /* Cor de fundo suave (cinza muito claro) */
+            min-height: 100vh;          /* Garante altura mínima de 100% da tela */
+        }
+
+        /* 
+            CABEÇALHO DA PÁGINA
+            
+            Contém o título do sistema e links de navegação.
+            Utiliza Flexbox para layout responsivo.
+        */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Gradiente roxo/azul */
+            color: white;                    /* Texto branco para contraste */
+            padding: 1rem 2rem;             /* Espaçamento interno (16px 32px) */
+            display: flex;                   /* Layout flexível */
+            justify-content: space-between; /* Distribui espaço entre título e navegação */
+            align-items: center;            /* Alinha verticalmente ao centro */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Sombra sutil para profundidade */
+        }
+
+        /* Título principal do cabeçalho */
+        .header h1 {
+            font-size: 1.5rem; /* 24px - tamanho adequado para títulos */
+        }
+
+        /* 
+            CONTAINER DOS LINKS DE NAVEGAÇÃO
+            
+            Organiza os botões de navegação horizontalmente.
+        */
+        .nav-links {
+            display: flex;      /* Layout horizontal */
+            gap: 1rem;         /* Espaço de 16px entre cada link */
+            align-items: center; /* Alinhamento vertical */
+        }
+
+        /* 
+            ESTILIZAÇÃO DOS LINKS DE NAVEGAÇÃO
+            
+            Cada botão individual do menu (Dashboard, Estoque, Sair).
+        */
+        .nav-link {
+            color: white;                           /* Cor do texto */
+            text-decoration: none;                  /* Remove sublinhado padrão */
+            padding: 0.5rem 1rem;                 /* Espaçamento interno (8px 16px) */
+            border-radius: 5px;                    /* Bordas arredondadas */
+            background: rgba(255,255,255,0.2);     /* Fundo semi-transparente */
+            transition: background-color 0.3s;     /* Animação suave na mudança de cor */
+        }
+
+        /* Efeito hover (quando mouse passa por cima) */
+        .nav-link:hover {
+            background: rgba(255,255,255,0.3); /* Fundo mais claro no hover */
+        }
+
+        /* 
+            CONTAINER PRINCIPAL DO CONTEÚDO
+            
+            Centraliza todo o conteúdo da página com largura máxima controlada.
+            Essencial para manter a legibilidade em telas grandes.
+        */
+        .container {
+            max-width: 1200px;    /* Largura máxima de 1200px */
+            margin: 2rem auto;    /* Centraliza horizontalmente com margem de 32px no topo/baixo */
+            padding: 0 2rem;     /* Espaçamento lateral de 32px */
+        }
+
+        /* 
+            SEÇÃO DE TÍTULO DA PÁGINA
+            
+            Apresenta o nome da funcionalidade e descrição.
+            Primeiro elemento visual após o cabeçalho.
+        */
+        .page-title {
+            background: white;                          /* Fundo branco para destaque */
+            padding: 2rem;                             /* Espaçamento interno generoso */
+            border-radius: 10px;                       /* Bordas arredondadas modernas */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);   /* Sombra sutil para profundidade */
+            margin-bottom: 2rem;                       /* Espaço antes do próximo elemento */
+        }
+
+        /* Título secundário dentro da seção */
+        .page-title h2 {
+            color: #333;              /* Cor escura para boa legibilidade */
+            margin-bottom: 0.5rem;    /* Pequeno espaço antes da descrição */
+        }
+
+        /* 
+            SEÇÃO DO FORMULÁRIO DE CADASTRO
+            
+            Container para o formulário de adição de novas autopeças.
+            Agrupa todos os campos de entrada de dados.
+        */
+        .form-section {
+            background: white;                          /* Fundo branco para destaque */
+            padding: 2rem;                             /* Espaçamento interno confortável */
+            border-radius: 10px;                       /* Bordas arredondadas */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);   /* Sombra para separação visual */
+            margin-bottom: 2rem;                       /* Espaço antes do próximo elemento */
+        }
+
+        /* 
+            TÍTULO DA SEÇÃO DO FORMULÁRIO
+            
+            Identifica a funcionalidade da seção com linha decorativa.
+        */
+        .form-section h3 {
+            color: #333;                            /* Cor escura para legibilidade */
+            margin-bottom: 1.5rem;                 /* Espaço antes dos campos */
+            border-bottom: 2px solid #667eea;      /* Linha decorativa colorida */
+            padding-bottom: 0.5rem;                /* Espaço entre texto e linha */
+        }
+
+        /* 
+            GRID RESPONSIVO PARA CAMPOS DO FORMULÁRIO
+            
+            Organiza os campos em colunas que se adaptam ao tamanho da tela.
+            - Em telas grandes: múltiplas colunas
+            - Em telas pequenas: uma coluna
+        */
+        .form-grid {
+            display: grid;                                              /* Layout em grade */
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Colunas responsivas */
+            gap: 1rem;                                                  /* Espaço entre campos */
+            margin-bottom: 1.5rem;                                     /* Espaço antes do botão */
+        }
+
+        /* 
+            GRUPO DE CAMPO (LABEL + INPUT)
+            
+            Cada campo do formulário é envolvido por esta classe.
+        */
+        .form-group {
+            margin-bottom: 1rem; /* Espaço entre grupos de campos */
+        }
+
+        /* 
+            RÓTULOS DOS CAMPOS (LABELS)
+            
+            Texto que identifica cada campo de entrada.
+        */
+        .form-group label {
+            display: block;         /* Ocupa linha inteira */
+            margin-bottom: 0.5rem;  /* Espaço antes do campo */
+            color: #333;           /* Cor escura para legibilidade */
+            font-weight: 500;      /* Peso médio para destaque */
+        }
+
+        /* 
+            CAMPOS DE ENTRADA (INPUTS E TEXTAREAS)
+            
+            Estilização padrão para todos os campos de texto e números.
+        */
+        .form-group input, .form-group textarea {
+            width: 100%;                        /* Ocupa largura total disponível */
+            padding: 10px;                      /* Espaçamento interno confortável */
+            border: 2px solid #e1e1e1;        /* Borda cinza clara */
+            border-radius: 5px;                /* Bordas levemente arredondadas */
+            font-size: 14px;                   /* Tamanho de fonte legível */
+            transition: border-color 0.3s;     /* Animação suave na mudança de cor */
+        }
+
+        /* 
+            ESTADO DE FOCO DOS CAMPOS
+            
+            Quando o usuário clica/seleciona um campo.
+        */
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;              /* Remove contorno padrão do navegador */
+            border-color: #667eea;      /* Muda cor da borda para azul */
+        }
+
+        /* 
+            CUSTOMIZAÇÃO ESPECÍFICA PARA TEXTAREA
+            
+            Campos de texto longo (como descrição).
+        */
+        .form-group textarea {
+            resize: vertical;       /* Permite redimensionar apenas verticalmente */
+            min-height: 80px;      /* Altura mínima para facilitar digitação */
+        }
+
+        /* 
+            BOTÃO PADRÃO DO SISTEMA
+            
+            Estilização base para todos os botões principais.
+            Utiliza gradiente para visual moderno e atrativo.
+        */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Gradiente azul-roxo */
+            color: white;               /* Texto branco para contraste */
+            padding: 10px 20px;        /* Espaçamento interno (altura/largura) */
+            border: none;              /* Remove borda padrão */
+            border-radius: 5px;        /* Bordas arredondadas */
+            cursor: pointer;           /* Cursor de mão ao passar por cima */
+            font-weight: 500;          /* Peso médio da fonte */
+            transition: transform 0.2s; /* Animação suave para efeitos */
+        }
+
+        /* 
+            EFEITO HOVER DO BOTÃO
+            
+            Eleva o botão quando o mouse passa por cima.
+            Cria sensação de "botão físico" sendo pressionado.
+        */
+        .btn:hover {
+            transform: translateY(-2px); /* Move 2px para cima */
+        }
+
+        /* 
+            SEÇÃO DE BUSCA/PESQUISA
+            
+            Container para o campo de busca de autopeças.
+            Design diferenciado para chamar atenção do usuário.
+        */
+        .search-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); /* Gradiente cinza suave */
+            padding: 2rem;                                  /* Espaçamento interno generoso */
+            border-radius: 15px;                           /* Bordas mais arredondadas que outros elementos */
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);      /* Sombra mais pronunciada */
+            margin-bottom: 2rem;                           /* Espaço antes da tabela */
+            border: 1px solid rgba(102, 126, 234, 0.1);   /* Borda sutil na cor do tema */
+        }
+
+        /* 
+            FORMULÁRIO DE BUSCA
+            
+            Layout flexível que se adapta a diferentes tamanhos de tela.
+        */
+        .search-form {
+            display: flex;          /* Layout horizontal */
+            gap: 1rem;             /* Espaço entre elementos */
+            align-items: end;      /* Alinha pela base (importante para botões) */
+            flex-wrap: wrap;       /* Permite quebra de linha em telas pequenas */
+        }
+
+        /* 
+            CONTAINER DO CAMPO DE BUSCA
+            
+            Posicionamento relativo necessário para o ícone posicionado absolutamente.
+        */
+        .search-input {
+            flex: 1;                /* Ocupa espaço restante disponível */
+            min-width: 250px;       /* Largura mínima para manter usabilidade */
+            position: relative;     /* Permite posicionamento absoluto do ícone */
+        }
+
+        /* 
+            RÓTULO DO CAMPO DE BUSCA
+        */
+        .search-input label {
+            font-weight: 600;          /* Negrito para destaque */
+            color: #495057;           /* Cinza escuro */
+            margin-bottom: 0.75rem;   /* Espaço antes do campo */
+            display: block;           /* Ocupa linha inteira */
+            font-size: 0.95rem;       /* Ligeiramente menor que o padrão */
+        }
+
+        /* 
+            CAMPO DE ENTRADA DA BUSCA
+            
+            Design moderno com bordas arredondadas e espaço para ícone.
+        */
+        .search-input input {
+            width: 100%;                            /* Largura total disponível */
+            padding: 12px 20px 12px 45px;         /* Padding maior à esquerda para o ícone */
+            border: 2px solid #dee2e6;            /* Borda cinza clara */
+            border-radius: 25px;                  /* Bordas muito arredondadas (formato "pill") */
+            font-size: 15px;                      /* Fonte ligeiramente maior */
+            transition: all 0.3s ease;            /* Transições suaves */
+            background: white;                    /* Fundo branco */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* Sombra sutil */
+        }
+
+        /* 
+            ESTADO DE FOCO DO CAMPO DE BUSCA
+            
+            Efeitos visuais quando o usuário clica no campo.
+        */
+        .search-input input:focus {
+            outline: none;                                      /* Remove contorno padrão */
+            border-color: #667eea;                             /* Muda cor da borda */
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);   /* Adiciona halo colorido */
+            transform: translateY(-1px);                        /* Eleva ligeiramente o campo */
+        }
+
+        /* 
+            ÍCONE DE BUSCA
+            
+            Pseudo-elemento para adicionar ícone sem HTML extra.
+            ::before cria um elemento virtual antes do conteúdo.
+        */
+        .search-input::before {
+            content: "🔍";          /* Emoji de lupa */
+            position: absolute;     /* Posicionamento absoluto dentro do container relativo */
+            left: 15px;            /* 15px da borda esquerda */
+            bottom: 12px;          /* 12px da borda inferior */
+            font-size: 16px;       /* Tamanho do ícone */
+            color: #6c757d;        /* Cor cinza média */
+        }
+
+        /* 
+            CONTAINER DOS BOTÕES DE BUSCA
+            
+            Agrupa botões "Buscar" e "Limpar" lado a lado.
+        */
+        .search-buttons {
+            display: flex;          /* Layout horizontal */
+            gap: 0.5rem;           /* Pequeno espaço entre botões */
+            align-items: end;      /* Alinha pela base com o campo de busca */
+        }
+
+        /* 
+            BOTÃO DE BUSCAR
+            
+            Botão principal para executar a pesquisa.
+            Design moderno com gradiente e efeitos visuais.
+        */
+        .btn-search {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Gradiente azul-roxo */
+            color: white;                           /* Texto branco */
+            padding: 12px 24px;                    /* Padding maior para destaque */
+            border: none;                          /* Remove borda padrão */
+            border-radius: 25px;                   /* Bordas arredondadas (formato pill) */
+            cursor: pointer;                       /* Cursor de mão */
+            font-weight: 600;                      /* Negrito */
+            transition: all 0.3s ease;             /* Transições suaves */
+            font-size: 14px;                       /* Tamanho da fonte */
+            display: flex;                         /* Layout flexível para texto + ícone */
+            align-items: center;                   /* Centraliza verticalmente */
+            gap: 8px;                             /* Espaço entre texto e ícone */
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); /* Sombra colorida */
+        }
+
+        /* 
+            EFEITO HOVER DO BOTÃO BUSCAR
+            
+            Animação quando mouse passa por cima.
+        */
+        .btn-search:hover {
+            transform: translateY(-2px);                        /* Move para cima */
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);  /* Sombra mais intensa */
+        }
+
+        /* 
+            BOTÃO DE LIMPAR BUSCA
+            
+            Botão secundário para resetar a pesquisa.
+            Cor diferente (cinza) para indicar ação secundária.
+        */
+        .btn-clear {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); /* Gradiente cinza */
+            color: white;                           /* Texto branco */
+            padding: 12px 20px;                    /* Padding ligeiramente menor */
+            border: none;                          /* Remove borda */
+            border-radius: 25px;                   /* Bordas arredondadas */
+            cursor: pointer;                       /* Cursor de mão */
+            font-weight: 600;                      /* Negrito */
+            transition: all 0.3s ease;             /* Transições suaves */
+            font-size: 14px;                       /* Tamanho da fonte */
+            text-decoration: none;                 /* Remove sublinhado (é um link <a>) */
+            display: flex;                         /* Layout flexível */
+            align-items: center;                   /* Centraliza verticalmente */
+            gap: 8px;                             /* Espaço entre texto e ícone */
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3); /* Sombra cinza */
+        }
+
+        /* 
+            EFEITO HOVER DO BOTÃO LIMPAR
+        */
+        .btn-clear:hover {
+            transform: translateY(-2px);                        /* Move para cima */
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);  /* Sombra mais intensa */
+            color: white;                                       /* Mantém cor do texto */
+            text-decoration: none;                              /* Evita sublinhado no hover */
+        }
+
+        /* 
+            SEÇÃO DA TABELA DE DADOS
+            
+            Container principal para exibição da lista de autopeças.
+            Usa overflow: hidden para bordas arredondadas funcionarem corretamente.
+        */
+        .table-section {
+            background: white;                          /* Fundo branco */
+            border-radius: 10px;                       /* Bordas arredondadas */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);   /* Sombra para profundidade */
+            overflow: hidden;                          /* Necessário para bordas arredondadas na tabela */
+        }
+
+        /* 
+            CABEÇALHO DA TABELA
+            
+            Área superior com título e informações da listagem.
+        */
+        .table-header {
+            background: #667eea;    /* Cor do tema principal */
+            color: white;           /* Texto branco */
+            padding: 1rem 2rem;     /* Espaçamento interno */
+        }
+
+        /* 
+            TABELA DE DADOS
+            
+            Estrutura principal para exibir os dados das autopeças.
+            border-collapse: collapse remove espaços entre células.
+        */
+        .table {
+            width: 100%;               /* Ocupa largura total disponível */
+            border-collapse: collapse; /* Remove espaços entre bordas das células */
+        }
+
+        /* 
+            CÉLULAS DA TABELA (CABEÇALHO E DADOS)
+            
+            Estilização comum para todas as células.
+        */
+        .table th, .table td {
+            padding: 12px;                      /* Espaçamento interno das células */
+            text-align: left;                   /* Alinhamento à esquerda */
+            border-bottom: 1px solid #ddd;      /* Linha divisória entre linhas */
+        }
+
+        /* 
+            CABEÇALHO DA TABELA (TH)
+            
+            Diferenciação visual para os títulos das colunas.
+        */
+        .table th {
+            background-color: #f8f9fa;  /* Fundo cinza claro */
+            color: #333;               /* Texto escuro */
+            font-weight: 600;          /* Negrito para destaque */
+        }
+
+        /* 
+            EFEITO HOVER NAS LINHAS
+            
+            Destaca linha quando mouse passa por cima.
+            Melhora a experiência de leitura em tabelas grandes.
+        */
+        .table tr:hover {
+            background-color: #f8f9fa; /* Fundo cinza claro no hover */
+        }
+
+        /* 
+            CONTAINER DOS BOTÕES DE AÇÃO
+            
+            Agrupa botões "Editar" e "Excluir" na última coluna da tabela.
+        */
+        .action-buttons {
+            display: flex;      /* Layout horizontal */
+            gap: 0.5rem;       /* Pequeno espaço entre botões */
+        }
+
+        /* 
+            BOTÕES PEQUENOS
+            
+            Versão reduzida dos botões para usar dentro da tabela.
+        */
+        .btn-sm {
+            padding: 5px 10px;  /* Padding reduzido */
+            font-size: 12px;    /* Fonte menor */
+        }
+
+        /* 
+            BOTÃO DE EDITAR
+            
+            Cor verde para indicar ação de edição/modificação.
+        */
+        .btn-edit {
+            background: #28a745; /* Verde Bootstrap */
+        }
+
+        /* 
+            BOTÃO DE EXCLUIR
+            
+            Cor vermelha para indicar ação perigosa/destrutiva.
+        */
+        .btn-delete {
+            background: #dc3545; /* Vermelho Bootstrap */
+        }
+
+        /* 
+            EFEITO HOVER DOS BOTÕES DE AÇÃO
+            
+            Reduz opacidade em vez de movimento para botões pequenos.
+        */
+        .btn-edit:hover, .btn-delete:hover {
+            opacity: 0.8; /* Fica ligeiramente transparente */
+        }
+
+        /* 
+            ALERTAS DO SISTEMA
+            
+            Mensagens de feedback para o usuário (sucesso, erro, etc.).
+            Usados pelo sistema Flask para flash messages.
+        */
+        .alert {
+            padding: 1rem;          /* Espaçamento interno */
+            margin-bottom: 1rem;    /* Espaço antes do próximo elemento */
+            border-radius: 5px;     /* Bordas arredondadas */
+        }
+
+        /* 
+            ALERTA DE SUCESSO
+            
+            Mensagem verde para operações bem-sucedidas.
+            Cores baseadas no padrão Bootstrap.
+        */
+        .alert-success {
+            background-color: #d4edda;  /* Fundo verde claro */
+            color: #155724;            /* Texto verde escuro */
+            border: 1px solid #c3e6cb;  /* Borda verde média */
+        }
+
+        /* 
+            ALERTA DE ERRO
+            
+            Mensagem vermelha para erros e falhas.
+        */
+        .alert-error {
+            background-color: #f8d7da;  /* Fundo vermelho claro */
+            color: #721c24;            /* Texto vermelho escuro */
+            border: 1px solid #f5c6cb;  /* Borda vermelha média */
+        }
+
+        /* 
+            ESTADO VAZIO
+            
+            Exibido quando não há dados para mostrar.
+            Centralizado com texto explicativo para o usuário.
+        */
+        .empty-state {
+            text-align: center; /* Centraliza o texto */
+            padding: 3rem;      /* Espaçamento generoso */
+            color: #666;        /* Cor neutra/discreta */
+        }
+
+        /* 
+            RESPONSIVIDADE - DISPOSITIVOS MÓVEIS
+            
+            Media query para telas menores que 768px (tablets e celulares).
+            Adapta o layout para melhor experiência em dispositivos móveis.
+            
+            Por que 768px? É um breakpoint padrão da indústria:
+            - Tablets em modo retrato: ~768px
+            - Smartphones: geralmente < 768px
+        */
+        @media (max-width: 768px) {
+            /* 
+                CABEÇALHO RESPONSIVO
+                
+                Muda de layout horizontal para vertical em telas pequenas.
+            */
+            .header {
+                flex-direction: column; /* Empilha título e navegação verticalmente */
+                gap: 1rem;             /* Espaço entre título e links */
+            }
+
+            /* 
+                CONTAINER PRINCIPAL RESPONSIVO
+                
+                Reduz padding lateral para aproveitar melhor o espaço limitado.
+            */
+            .container {
+                padding: 0 1rem; /* Padding menor nas laterais */
+            }
+
+            /* 
+                FORMULÁRIO DE BUSCA RESPONSIVO
+                
+                Muda para layout vertical empilhando campo e botões.
+            */
+            .search-form {
+                flex-direction: column; /* Empilha elementos verticalmente */
+                align-items: stretch;   /* Estica elementos para ocupar largura total */
+            }
+
+            /* 
+                CAMPO DE BUSCA RESPONSIVO
+            */
+            .search-input {
+                min-width: auto;        /* Remove largura mínima */
+                margin-bottom: 1rem;    /* Espaço antes dos botões */
+            }
+
+            /* 
+                BOTÕES DE BUSCA RESPONSIVOS
+                
+                Centraliza os botões na tela.
+            */
+            .search-buttons {
+                justify-content: center; /* Centraliza botões horizontalmente */
+            }
+
+            /* 
+                TAMANHO DOS BOTÕES EM MOBILE
+                
+                Botões ocupam espaço igual mas com largura máxima controlada.
+            */
+            .btn-search, .btn-clear {
+                flex: 1;            /* Ocupa espaço disponível igualmente */
+                max-width: 150px;   /* Não fica muito largo */
+            }
+
+            /* 
+                TABELA RESPONSIVA
+                
+                Fonte menor para caber mais conteúdo na tela pequena.
+            */
+            .table {
+                font-size: 12px; /* Fonte reduzida */
+            }
+
+            /* 
+                BOTÕES DE AÇÃO RESPONSIVOS
+                
+                Empilha botões "Editar" e "Excluir" verticalmente.
+            */
+            .action-buttons {
+                flex-direction: column; /* Botões em coluna */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 
+        CABEÇALHO DA APLICAÇÃO
+        
+        Contém o título da página atual e links de navegação.
+        Utiliza sintaxe Jinja2 ({{ url_for() }}) para gerar URLs dinâmicas.
+        
+        url_for() é uma função do Flask que gera URLs baseadas no nome das rotas,
+        garantindo que os links funcionem mesmo se as URLs mudarem.
+    -->
+    <header class="header">
+        <h1>🔧 Cadastro de Autopeças</h1>
+        <div class="nav-links">
+            <!-- Links de navegação com rotas Flask -->
+            <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+            <a href="{{ url_for('estoque') }}" class="nav-link">Estoque</a>
+            <a href="{{ url_for('logout') }}" class="nav-link">Sair</a>
+        </div>
+    </header>
+
+    <!-- CONTAINER PRINCIPAL DO CONTEÚDO -->
+    <div class="container">
+        <!-- 
+            SISTEMA DE MENSAGENS FLASH
+            
+            Exibe mensagens temporárias do sistema (sucesso, erro, etc.).
+            
+            Como funciona:
+            1. get_flashed_messages() busca mensagens armazenadas na sessão
+            2. with_categories=true inclui a categoria da mensagem (success, error)
+            3. Loop Jinja2 exibe cada mensagem com sua respectiva classe CSS
+            4. As mensagens são automaticamente removidas após serem exibidas
+        -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- 
+            TÍTULO E DESCRIÇÃO DA PÁGINA
+            
+            Apresenta o propósito da página ao usuário.
+        -->
+        <div class="page-title">
+            <h2>Gerenciamento de Autopeças</h2>
+            <p>Cadastre, edite e gerencie as autopeças do seu sistema.</p>
+        </div>
+
+        <!-- 
+            FORMULÁRIO DE CADASTRO DE AUTOPEÇAS
+            
+            Permite ao usuário adicionar novas autopeças ao sistema.
+            
+            Estrutura:
+            - method="POST": Envia dados via POST (seguro para dados sensíveis)
+            - action="{{ url_for('add_autopeca') }}": URL da rota Flask que processará o formulário
+            - form-grid: Layout em grade responsiva para os campos
+            - Validações HTML5: required, min, step, type="number"
+        -->
+        <div class="form-section">
+            <h3>➕ Adicionar Nova Autopeça</h3>
+            <form method="POST" action="{{ url_for('add_autopeca') }}">
+                <!-- 
+                    GRID DE CAMPOS PRINCIPAIS
+                    
+                    Organiza campos em colunas responsivas.
+                    Em telas grandes: 2-3 colunas
+                    Em telas pequenas: 1 coluna
+                -->
+                <div class="form-grid">
+                    <!-- CAMPO: Nome da Peça -->
+                    <div class="form-group">
+                        <label for="nome_peca">Nome da Peça *</label>
+                        <input type="text" id="nome_peca" name="nome_peca" required>
+                        <!-- 
+                            required: Campo obrigatório (validação HTML5)
+                            name: Nome do campo enviado ao servidor
+                            id: Para associação com o label (acessibilidade)
+                        -->
+                    </div>
+                    
+                    <!-- CAMPO: Número de Série -->
+                    <div class="form-group">
+                        <label for="num_serie">Número de Série *</label>
+                        <input type="text" id="num_serie" name="num_serie" required>
+                    </div>
+                    
+                    <!-- CAMPO: Estoque Atual -->
+                    <div class="form-group">
+                        <label for="estoque">Estoque Atual *</label>
+                        <input type="number" id="estoque" name="estoque" min="0" required>
+                        <!-- 
+                            type="number": Apenas números permitidos
+                            min="0": Valor mínimo zero (estoque não pode ser negativo)
+                        -->
+                    </div>
+                    
+                    <!-- CAMPO: Estoque Mínimo -->
+                    <div class="form-group">
+                        <label for="estoque_minimo">Estoque Mínimo *</label>
+                        <input type="number" id="estoque_minimo" name="estoque_minimo" min="0" required>
+                    </div>
+                    
+                    <!-- CAMPO: Preço -->
+                    <div class="form-group">
+                        <label for="preco">Preço (R$) *</label>
+                        <input type="number" id="preco" name="preco" step="0.01" min="0" required>
+                        <!-- 
+                            step="0.01": Permite valores decimais (centavos)
+                            Exemplo: 19.99, 150.50
+                        -->
+                    </div>
+                    
+                    <!-- CAMPO: Compatibilidade (opcional) -->
+                    <div class="form-group">
+                        <label for="compatibilidade">Compatibilidade</label>
+                        <input type="text" id="compatibilidade" name="compatibilidade">
+                        <!-- Sem 'required' = campo opcional -->
+                    </div>
+                </div>
+                
+                <!-- 
+                    CAMPO DE DESCRIÇÃO
+                    
+                    Separado do grid por ocupar largura total.
+                    Textarea permite texto longo com quebras de linha.
+                -->
+                <div class="form-group">
+                    <label for="descricao">Descrição</label>
+                    <textarea id="descricao" name="descricao" placeholder="Descreva a autopeça..."></textarea>
+                </div>
+                
+                <!-- BOTÃO DE SUBMISSÃO -->
+                <button type="submit" class="btn">Adicionar Autopeça</button>
+                <!-- 
+                    type="submit": Envia o formulário ao ser clicado
+                    Dados são enviados para a rota 'add_autopeca' no Flask
+                -->
+            </form>
+        </div>
+
+        <!-- 
+            SEÇÃO DE BUSCA/PESQUISA
+            
+            Permite filtrar a lista de autopeças por nome ou número de série.
+            
+            Funcionamento:
+            1. Usuário digita termo de busca
+            2. Formulário envia dados via GET (aparece na URL)
+            3. Flask processa o termo e filtra os resultados
+            4. Página recarrega com resultados filtrados
+            
+            Por que GET ao invés de POST?
+            - Permite bookmark da busca
+            - Histórico do navegador funciona
+            - URL pode ser compartilhada
+        -->
+        <div class="search-section">
+            <form method="GET" class="search-form">
+                <!-- 
+                    CAMPO DE BUSCA
+                    
+                    value="{{ search }}" preserva o termo buscado após a pesquisa.
+                    Variável 'search' vem do contexto Flask.
+                -->
+                <div class="search-input">
+                    <label for="search">🔍 Buscar por nome ou número de série:</label>
+                    <input type="text" id="search" name="search" value="{{ search }}" placeholder="Digite o nome da peça ou número de série...">
+                </div>
+                
+                <!-- BOTÕES DE AÇÃO DA BUSCA -->
+                <div class="search-buttons">
+                    <!-- BOTÃO BUSCAR -->
+                    <button type="submit" class="btn-search">
+                        <span>Buscar</span>
+                        <span>⚡</span> <!-- Ícone decorativo -->
+                    </button>
+                    
+                    <!-- 
+                        BOTÃO LIMPAR (condicional)
+                        
+                        Só aparece quando há uma busca ativa.
+                        A condição Jinja2 verifica se existe termo de busca.
+                    -->
+                    {% if search %}
+                        <a href="{{ url_for('autopecas') }}" class="btn-clear">
+                            <span>Limpar</span>
+                            <span>✖️</span>
+                        </a>
+                        <!-- 
+                            Link para a mesma página sem parâmetros de busca,
+                            efetivamente "limpando" o filtro.
+                        -->
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- 
+            LISTA DE AUTOPEÇAS
+            
+            Exibe todas as autopeças cadastradas em formato de tabela.
+            Inclui informações de estoque e botões para ações.
+        -->
+        <div class="table-section">
+            <!-- CABEÇALHO DA TABELA -->
+            <div class="table-header">
+                <h3>📋 Lista de Autopeças</h3>
+                <!-- 
+                    INDICADOR DE BUSCA ATIVA
+                    
+                    Mostra qual termo está sendo filtrado.
+                    Só aparece quando há busca ativa.
+                -->
+                {% if search %}
+                    <p>Resultados para: "{{ search }}"</p>
+                {% endif %}
+            </div>
+
+            <!-- 
+                VERIFICAÇÃO DE DADOS
+                
+                Condição Jinja2 verifica se existem autopeças para exibir.
+                Variável 'autopecas' vem do contexto Flask (lista de registros do banco).
+            -->
+            {% if autopecas %}
+                <table class="table">
+                    <!-- 
+                        CABEÇALHO DA TABELA
+                        
+                        Define os títulos das colunas.
+                        <thead> é semanticamente correto e pode ser estilizado separadamente.
+                    -->
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Nº Série</th>
+                            <th>Estoque</th>
+                            <th>Estoque Min.</th>
+                            <th>Preço</th>
+                            <th>Status</th>      <!-- Indica se estoque está baixo -->
+                            <th>Ações</th>       <!-- Botões Editar/Excluir -->
+                        </tr>
+                    </thead>
+                    <!-- 
+                        CORPO DA TABELA
+                        
+                        <tbody> contém as linhas de dados.
+                        Loop Jinja2 itera sobre cada autopeça.
+                    -->
+                    <tbody>
+                        <!-- 
+                            LOOP ATRAVÉS DAS AUTOPEÇAS
+                            
+                            Loop Jinja2 itera sobre cada registro.
+                            'autopecas' é uma lista de objetos vindos do banco de dados.
+                            'peca' representa uma autopeça individual a cada iteração.
+                        -->
+                        {% for peca in autopecas %}
+                        <tr>
+                            <!-- 
+                                COLUNA: NOME DA PEÇA
+                                
+                                Exibe nome principal em negrito.
+                                Se houver descrição, mostra prévia truncada.
+                            -->
+                            <td>
+                                <strong>{{ peca.NOME_PECA }}</strong>
+                                <!-- 
+                                    DESCRIÇÃO TRUNCADA (condicional)
+                                    
+                                    Condição Jinja2: só mostra se existe descrição
+                                    [:50]: pega apenas os primeiros 50 caracteres
+                                    |length > 50: filtro Jinja2 para verificar comprimento
+                                    ...: adiciona reticências se texto foi truncado
+                                -->
+                                {% if peca.DESCRICAO %}
+                                    <br><small style="color: #666;">{{ peca.DESCRICAO[:50] }}{% if peca.DESCRICAO|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- COLUNA: NÚMERO DE SÉRIE -->
+                            <td>{{ peca.NUM_SERIAL }}</td>
+                            
+                            <!-- COLUNA: ESTOQUE ATUAL -->
+                            <td>{{ peca.ESTOQUE }}</td>
+                            
+                            <!-- COLUNA: ESTOQUE MÍNIMO -->
+                            <td>{{ peca.ESTOQUE_MINIMO }}</td>
+                            
+                            <!-- 
+                                COLUNA: PREÇO
+                                
+                                "%.2f"|format(): filtro Jinja2 para formatar número
+                                %.2f = número decimal com 2 casas após a vírgula
+                                Exemplo: 19.5 vira 19.50
+                            -->
+                            <td>R$ {{ "%.2f"|format(peca.PRECO) }}</td>
+                            
+                            <!-- 
+                                COLUNA: STATUS DO ESTOQUE
+                                
+                                Lógica condicional para indicar situação do estoque:
+                                - Se estoque atual <= estoque mínimo: BAIXO (vermelho)
+                                - Caso contrário: OK (verde)
+                            -->
+                            <td>
+                                {% if peca.ESTOQUE <= peca.ESTOQUE_MINIMO %}
+                                    <span style="color: #dc3545; font-weight: bold;">⚠️ Baixo</span>
+                                {% else %}
+                                    <span style="color: #28a745; font-weight: bold;">✅ OK</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- 
+                                COLUNA: BOTÕES DE AÇÃO
+                                
+                                Contém links para editar e excluir a autopeça.
+                            -->
+                            <td>
+                                <div class="action-buttons">
+                                    <!-- 
+                                        BOTÃO EDITAR
+                                        
+                                        url_for('edit_autopeca', id=peca.ID_PECA):
+                                        - Gera URL para rota 'edit_autopeca'
+                                        - Passa ID da peça como parâmetro
+                                        - Exemplo: /edit_autopeca/123
+                                    -->
+                                    <a href="{{ url_for('edit_autopeca', id=peca.ID_PECA) }}" class="btn btn-sm btn-edit">✏️ Editar</a>
+                                    
+                                    <!-- 
+                                        BOTÃO EXCLUIR
+                                        
+                                        onclick="return confirm(...)":
+                                        - JavaScript para confirmar ação
+                                        - return false cancela o clique se usuário cancelar
+                                        - Previne exclusões acidentais
+                                    -->
+                                    <a href="{{ url_for('delete_autopeca', id=peca.ID_PECA) }}" 
+                                       class="btn btn-sm btn-delete"
+                                       onclick="return confirm('Tem certeza que deseja excluir esta autopeça?')">🗑️ Excluir</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            
+            <!-- 
+                ESTADO VAZIO
+                
+                Exibido quando não há autopeças para mostrar.
+                Bloco else corresponde à condição lá em cima.
+            -->
+            {% else %}
+                <div class="empty-state">
+                    <!-- 
+                        MENSAGENS DIFERENTES PARA CONTEXTOS DIFERENTES
+                        
+                        Se há busca ativa mas sem resultados: sugere ver todas
+                        Se não há busca: indica que sistema está vazio
+                    -->
+                    {% if search %}
+                        <p>Nenhuma autopeça encontrada com o termo "{{ search }}".</p>
+                        <a href="{{ url_for('autopecas') }}" class="btn" style="margin-top: 1rem;">Ver todas as autopeças</a>
+                    {% else %}
+                        <p>Nenhuma autopeça cadastrada no sistema.</p>
+                        <p>Utilize o formulário acima para adicionar a primeira autopeça.</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 
+        ESTRUTURAS NECESSÁRIAS PARA REPRODUZIR ESTE PROJETO:
+        
+        1. BACKEND FLASK (app.py):
+        - Rotas: dashboard, estoque, logout, add_autopeca, edit_autopeca, delete_autopeca
+        - Conexão com banco de dados MySQL
+        - Sistema de autenticação/sessão
+        - Flash messages para feedback
+        
+        2. BANCO DE DADOS:
+        - Tabela de autopeças com campos: ID_PECA, NOME_PECA, NUM_SERIAL, ESTOQUE, ESTOQUE_MINIMO, PRECO, DESCRICAO
+        - Tabela de usuários para autenticação
+        
+        3. DEPENDÊNCIAS PYTHON:
+        - Flask
+        - PyMySQL (ou mysql-connector-python)
+        - Werkzeug (para hash de senhas)
+        
+        4. ESTRUTURA DE PASTAS:
+        /projeto
+        ├── app.py              (aplicação Flask principal)
+        ├── templates/
+        │   ├── autopecas.html  (este arquivo)
+        │   ├── dashboard.html
+        │   ├── estoque.html
+        │   ├── login.html
+        │   └── edit_autopeca.html
+        
+        5. CONFIGURAÇÃO DO SERVIDOR:
+        - XAMPP ou MySQL Server rodando
+        - Banco 'saep_db' criado
+        - Tabelas criadas com estrutura correta
+        
+        COMANDOS PARA RODAR:
+        1. pip install flask pymysql
+        2. python app.py
+        3. Acessar http://localhost:5000
+    -->
+</body>
+</html>

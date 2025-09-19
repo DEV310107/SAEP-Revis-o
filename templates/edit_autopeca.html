@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Autopeça - Sistema de Autopeças</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.2);
+            transition: background-color 0.3s;
+        }
+
+        .nav-link:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-title {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .page-title h2 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e1e1;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>✏️ Editar Autopeça</h1>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+            <a href="{{ url_for('autopecas') }}" class="nav-link">Autopeças</a>
+            <a href="{{ url_for('logout') }}" class="nav-link">Sair</a>
+        </div>
+    </header>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="page-title">
+            <h2>Editar Autopeça</h2>
+            <p>Modifique as informações da autopeça selecionada.</p>
+        </div>
+
+        {% if autopeca %}
+        <div class="form-section">
+            <form method="POST" action="{{ url_for('update_autopeca', id=autopeca.ID_PECA) }}">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="nome_peca">Nome da Peça *</label>
+                        <input type="text" id="nome_peca" name="nome_peca" value="{{ autopeca.NOME_PECA }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="num_serie">Número de Série *</label>
+                        <input type="text" id="num_serie" name="num_serie" value="{{ autopeca.NUM_SERIAL }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="estoque">Estoque Atual *</label>
+                        <input type="number" id="estoque" name="estoque" value="{{ autopeca.ESTOQUE }}" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="estoque_minimo">Estoque Mínimo *</label>
+                        <input type="number" id="estoque_minimo" name="estoque_minimo" value="{{ autopeca.ESTOQUE_MINIMO }}" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="preco">Preço (R$) *</label>
+                        <input type="number" id="preco" name="preco" value="{{ autopeca.PRECO }}" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="compatibilidade">Compatibilidade</label>
+                        <input type="text" id="compatibilidade" name="compatibilidade" value="{{ autopeca.COMPATIBILIDADE or '' }}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="descricao">Descrição</label>
+                    <textarea id="descricao" name="descricao" placeholder="Descreva a autopeça...">{{ autopeca.DESCRICAO or '' }}</textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn">💾 Salvar Alterações</button>
+                    <a href="{{ url_for('autopecas') }}" class="btn btn-secondary">❌ Cancelar</a>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <div class="form-section" style="text-align: center; padding: 3rem;">
+            <h3 style="color: #dc3545;">Autopeça não encontrada</h3>
+            <p style="margin: 1rem 0;">A autopeça que você está tentando editar não existe ou foi removida.</p>
+            <a href="{{ url_for('autopecas') }}" class="btn">Voltar para Lista</a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
