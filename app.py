@@ -56,7 +56,7 @@ DB_CONFIG = {
     'port': 3306,               # Porta padrão MySQL
     'user': 'root',             # Usuário padrão XAMPP
     'password': '',             # Senha vazia (padrão XAMPP)
-    'database': 'saep_db',      # Nome do banco criado
+    'database': 'SAEB_DB',      # Nome do banco criado
     'charset': 'utf8mb4',       # Suporte completo UTF-8
     'autocommit': True          # Auto-confirma transações
 }

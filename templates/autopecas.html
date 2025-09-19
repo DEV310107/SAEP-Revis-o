@@ -988,7 +988,7 @@
                                 - Caso contrário: OK (verde)
                             -->
                             <td>
-                                {% if peca.ESTOQUE <= peca.ESTOQUE_MINIMO %}
+                                {% if peca.ESTOQUE <= peca.ESTOQUE_MIN %}
                                     <span style="color: #dc3545; font-weight: bold;">⚠️ Baixo</span>
                                 {% else %}
                                     <span style="color: #28a745; font-weight: bold;">✅ OK</span>
